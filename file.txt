@@ -1,0 +1,57 @@
+-- ==
+-- entry: FUNCTION_NAME_HERE
+-- compiled nobench input {
+    [1i32, 2i32, 3i32]
+}
+-- output {
+    [-1i32, 0i32, 1i32]
+}
+--
+-- compiled nobench input {
+    [42i32]
+}
+-- output {
+    [-1i32]
+}
+--
+-- compiled nobench input {
+    [4i32, 3i32, 2i32, 1i32]
+}
+-- output {
+    [-1i32, -1i32, -1i32, -1i32]
+}
+--
+-- compiled nobench input {
+    [7i32, 7i32, 7i32]
+}
+-- output {
+    [-1i32, -1i32, -1i32]
+}
+--
+-- compiled nobench input {
+    [2i32, 1i32, 2i32, 2i32]
+}
+-- output {
+    [-1i32, -1i32, 1i32, 1i32]
+}
+--
+-- compiled nobench input {
+    [3i32, 1i32, 4i32, 2i32, 5i32]
+}
+-- output {
+    [-1i32, -1i32, 1i32, 1i32, 3i32]
+}
+--
+-- compiled nobench input {
+    [5i32, 2i32, 8i32, 6i32, 3i32, 7i32, 1i32, 4i32]
+}
+-- output {
+    [-1i32, -1i32, 1i32, 1i32, 1i32, 4i32, -1i32, 6i32]
+}
+--
+-- compiled nobench input {
+    [-1i32, -3i32, -2i32, 0i32]
+}
+-- output {
+    [-1i32, -1i32, 1i32, 2i32]
+}
