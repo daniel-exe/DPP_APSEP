@@ -1,5 +1,0 @@
-# Ignore everything
-*
-
-# But do not ignore .fut files
-!*.fut
