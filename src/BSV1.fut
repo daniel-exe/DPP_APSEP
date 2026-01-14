@@ -38,7 +38,7 @@ let findLeftRightMatch
   in (l, r)
 
 -- Adjacent merge for a block (stack-based nearest smaller scan)
-let adjacentMergeBOTH [n] (A: []i64) (L:[n]i64) (R:[n]i64) (offset: i64) : ([n]i64, [n]i64) =
+let adjacentMergeBOTH [n] (A: [n]i64) (L:[n]i64) (R:[n]i64) (offset: i64) : ([n]i64, [n]i64) =
   let L = replicate n (-1i64)
   let R = replicate n (-1i64)
 
