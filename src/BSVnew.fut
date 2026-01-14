@@ -36,7 +36,8 @@ let findLeftRightMatch (tree: mintree.tree) (i: i64) : (i64, i64) =
 
 -- Adjacent merge for a block (stack-based nearest smaller scan)
 let adjacentMergeGeneric [n] (A: []i64) (X: [n]i64) (offset: i64) (forward: bool) : [n]i64 =
-  let (start, step, end) = if forward then (offset, offset+1, offset + n - 1) else (offset + n - 1, offset + n - 2, offset)
+  let max = i64.min (offset + n - 1) (length A - 1)
+  let (start, step, end) = if forward then (offset, offset+1, max ) else (max , max-1, offset)
     in
     let (X,_,_) = loop (X_acc, top, stack) = (copy X, -1i64, replicate n 0i64) for i in start .. step ... end do
       let rec_top = loop t = top while t >= 0 && A[stack[t]] > A[i] do t - 1
@@ -50,21 +51,15 @@ let adjacentMergeBOTH [n] (A: []i64) (L:[n]i64) (R:[n]i64) (offset: i64) : ([n]i
 
 let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
 
-  -- Step 1: Create min-binary tree
   let tree = mintree.make A
-
   let blockCount = (n + blockSize - 1) / blockSize
-  
+  let blocks = iota blockCount
   let (L_blocks, R_blocks, REPs, B_blocks) =
-    iota blockCount
+    blocks
     |> map (\blockNumber ->
         let start = blockNumber * blockSize
         let len = i64.min blockSize (n - start)
-        let L_block = replicate blockSize (-1i64)
-        let R_block = replicate blockSize (-1i64)
-        let (L_block, R_block) =
-          let (l, r) = adjacentMergeBOTH A (copy L_block[0:len]) (copy R_block[0:len]) start
-        in (L_block with [0:len] = copy l, R_block with [0:len] = copy r)
+        let (L_block, R_block) = adjacentMergeBOTH A (replicate blockSize (-1i64)) (replicate blockSize (-1i64)) start
         let block = A[start:(start+len)] 
         let ri = start + findRepresentative block
         let (b1, b2) = findLeftRightMatch tree ri
@@ -72,41 +67,48 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
       )
     |> unzip4
 
-  let L0 = flatten L_blocks
-  let R0 = flatten R_blocks
+  let L0 = (flatten L_blocks)[0:n]
+  let R0 = (flatten R_blocks)[0:n]
+
+  let bfsize = (2 * blockSize)
+  let Ix = replicate bfsize (-1)
+  let (L1, R1, I1) = map3 (\ri (b1,b2) bl-> 
+    let BLi = if b1 == -1 then -1 else b1 / blockSize
+    in if BLi >= 0 && BLi + 1 == bl && b1 != -1 then   
+        let len = i64.min (i64.max 0 (ri - b1 + 1)) (n - b1)
+        let I = map (\x -> if x < len then x + b1 else -1) (iota bfsize)
+        let (l, r) = adjacentMergeBOTH A (copy L0[b1:b1+len]) (copy R0[b1:b1+len]) b1 
+        in ((replicate bfsize (-1)) with [0:len] = l, (replicate bfsize (-1)) with [0:len] = r, I)
+    else (Ix,Ix,Ix)
+    ) REPs B_blocks blocks |> unzip3  
+    
+  let I1 = (flatten I1)
+  let L1 = scatter (copy L0) I1 (flatten L1)
+  let R1 = scatter (copy R0) I1 (flatten R1)
+
+  let (L2, R2, I2) = map3 (\ri (b1,b2) bl-> 
+    let BRi = if b2 == -1 then -1 else b2 / blockSize 
+    in if BRi >= 0 && BRi - 1 == bl && b2 != -1 then
+        let len = i64.min (i64.max 0 (b2-ri + 1)) (n - ri)
+        let I = map (\x -> if x < len then x + ri else -1) (iota bfsize)
+        let (l, r) = adjacentMergeBOTH A (copy L1[ri:ri+len]) (copy R1[ri:ri+len]) ri 
+        in ((replicate bfsize (-1)) with [0:len] = l, (replicate bfsize (-1)) with [0:len] = r, I)
+    else (Ix,Ix,Ix)
+    ) REPs B_blocks blocks |> unzip3  
+  
+  let I2 = (flatten I2)
+  let L2 = scatter (copy L1) I2 (flatten L2)
+  let R2 = scatter (copy R1) I2 (flatten R2)
+  
   -- Step 2: nonlocal merging
   let (L_final, R_final) =
-      loop (L_acc, R_acc) = (copy L0, copy R0) for BCi < blockCount do
+      loop (L2, R2) = (copy L2, copy R2) for BCi < blockCount do
         let ri = REPs[BCi]
         let (b1, b2) = B_blocks[BCi]
         let BLi = if b1 == -1 then -1 else b1 / blockSize
         let BRi = if b2 == -1 then -1 else b2 / blockSize
         let rBL = if BLi >= 0 then REPs[BLi] else -1
         let rBR = if BRi >= 0 then REPs[BRi] else -1
-
-        -- Adjacent merge (operate on preallocated arrays L_acc, R_acc)
-        let (L1, R1) =
-          if BLi >= 0 && BLi + 1 == BCi && b1 != -1 then
-            -- interval [b1 .. ri] inclusive => length = ri - b1 + 1, offset = b1
-            let off = b1
-            let len = i64.max 0 (ri - b1 + 1)
-            let len = i64.min len (n - off)     -- clip to array end
-            let (l, r) = adjacentMergeBOTH A (copy L_acc[off:off+len]) (copy R_acc[off:off+len]) off
-            in (copy L_acc with [off:off+len] = copy l, copy R_acc with [off:off+len] = copy r)
-          else (L_acc, R_acc)
-
-        let (L2, R2) =
-          if BRi >= 0 && BRi - 1 == BCi && b2 != -1 then
-            -- interval [ri .. b2] inclusive => length = b2 - ri + 1, offset = ri
-            let off = ri
-            let len = i64.max 0 (b2 - ri + 1)
-            let len = i64.min len (n - off)
-            let (l, r) = adjacentMergeBOTH A (copy L1[off:off+len]) (copy R1[off:off+len]) off
-            in (copy L1 with [off:off+len] = copy l, copy R1 with [off:off+len] = copy r)
-          else (L1, R1)
-
-
-        -- Far-away merge: call linear merging that requires arrays with known size
         let (L3, R3) =
           if b1 != -1 && b2 != -1 then
             let ((_,bBL), (bBR,_)) = (B_blocks[BLi], B_blocks[BRi])
