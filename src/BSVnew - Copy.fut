@@ -17,10 +17,10 @@ let farAwayBlocks_ANSV_linear [n] [m]
         while i >= a || j <= d do
           if (i >= a) && (j <= d) then
             if A[i] < A[j] then
-              let Left'  = if Left[j-c] == -1 then Left  with [j-c] = i else Left
+              let Left'  = if Left[j] == -1 then Left  with [j] = i else Left
               in (Left', Right, i, j + 1)
             else
-              let Right' = if Right[i-a] == -1 then Right with [i-a] = j else Right
+              let Right' = if Right[i] == -1 then Right with [i] = j else Right
               in (Left, Right', i - 1, j)
           else if j <= d then
             (Left, Right, i, j + 1)
@@ -83,61 +83,52 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
     ) REPs B_blocks blocks |> unzip3  
     
   let I1 = (flatten I1)
-  let L1 = scatter (copy L0) I1 (flatten L1)
-  let R1 = scatter (copy R0) I1 (flatten R1)
+  let L11 = scatter (copy L0) I1 (flatten L1)
+  let R11 = scatter (copy R0) I1 (flatten R1)
 
   let (L2, R2, I2) = map3 (\ri (b1,b2) bl-> 
     let BRi = if b2 == -1 then -1 else b2 / blockSize 
     in if BRi >= 0 && BRi - 1 == bl && b2 != -1 then
         let len = i64.min (i64.max 0 (b2-ri + 1)) (n - ri)
         let I = map (\x -> if x < len then x + ri else -1) (iota bfsize)
-        let (l, r) = adjacentMergeBOTH A (copy L1[ri:ri+len]) (copy R1[ri:ri+len]) ri 
+        let (l, r) = adjacentMergeBOTH A (copy L11[ri:ri+len]) (copy R11[ri:ri+len]) ri 
         in ((replicate bfsize (-1)) with [0:len] = l, (replicate bfsize (-1)) with [0:len] = r, I)
     else (Ix,Ix,Ix)
     ) REPs B_blocks blocks |> unzip3  
   
   let I2 = (flatten I2)
-  let L2 = scatter (copy L1) I2 (flatten L2)
-  let R2 = scatter (copy R1) I2 (flatten R2)
+  let L2 = scatter (copy L11) I2 (flatten L2)
+  let R2 = scatter (copy R11) I2 (flatten R2)
   
-  let In = (replicate n (-1))
-  let (L3, R3, I3) = map3 (\ri (b1,b2) bl-> 
-    if b1 != -1 && b2 != -1 then
-      let BLi = if b1 == -1 then -1 else b1 / blockSize
-      let BRi = if b2 == -1 then -1 else b2 / blockSize 
-      let rBR = if BRi >= 0 then REPs[BRi] else -1
-      let ((_,bBL), (bBR,_)) = (B_blocks[BLi], B_blocks[BRi]) in 
-      if BLi == bBR / blockSize then
-        let (l,r) = farAwayBlocks_ANSV_linear A bBR (b1) b2 (rBR) (copy L2[b2:rBR+1]) (copy R2[bBR:b1+1]) 
-        let I = map (\x -> if x >= b2 && x <= rBR then x else -1) (iota n)
-        in ((replicate n (-1)) with[b2:rBR+1] = l, (replicate n (-1)) with [bBR:b1+1] = r, I)
-      else (In,In ,In )   
-    else (In,In ,In ) 
-      ) REPs B_blocks blocks |> unzip3  
-
-  let I3 = (flatten I3)
-  let L3 = scatter (copy L2) I3 (flatten L3)
-  let R3 = scatter (copy R2) I3 (flatten R3)
-
-
-  let (L4, R4, I4) = map3 (\ri (b1,b2) bl-> 
-    if b1 != -1 && b2 != -1 then
-      let BLi = if b1 == -1 then -1 else b1 / blockSize
-      let BRi = if b2 == -1 then -1 else b2 / blockSize 
-      let rBL = if BLi >= 0 then REPs[BLi] else -1
-      let ((_,bBL), (bBR,_)) = (B_blocks[BLi], B_blocks[BRi]) in 
-      if BRi == bBL / blockSize then
-        let (l,r) = farAwayBlocks_ANSV_linear A rBL (b1) b2 (bBL) (copy L2[b2:bBL+1]) (copy R2[rBL:b1+1]) 
-        let I = map (\x -> if x >= b2 && x <= rBL then x else -1) (iota n)
-        in ((replicate n (-1)) with[b2:bBL+1] = l, (replicate n (-1)) with [rBL:b1+1] = r, I)
-      else (In,In ,In )   
-    else (In,In ,In ) 
-      ) REPs B_blocks blocks |> unzip3  
-
-  let I4 = (flatten I4)
-  let L4 = scatter (copy L3) I4 (flatten L4)
-  let R4 = scatter (copy R3) I4 (flatten R4)
-  in (L4, R4)
+  -- Step 2: nonlocal merging
+  let (L_final, R_final) =
+      loop (L2, R2) = (copy L2, copy R2) for BCi < blockCount do
+        let ri = REPs[BCi]
+        let (b1, b2) = B_blocks[BCi]
+        let BLi = if b1 == -1 then -1 else b1 / blockSize
+        let BRi = if b2 == -1 then -1 else b2 / blockSize
+        let rBL = if BLi >= 0 then REPs[BLi] else -1
+        let rBR = if BRi >= 0 then REPs[BRi] else -1
+        let (L3, R3) =
+          if b1 != -1 && b2 != -1 then
+            let ((_,bBL), (bBR,_)) = (B_blocks[BLi], B_blocks[BRi])
+            let (L_temp, R_temp) =
+              if BLi == bBR / blockSize then
+                let (l,r) = farAwayBlocks_ANSV_linear A bBR (b1) b2 (rBR) (copy L2) (copy R2)
+                in (L2 with [b2:rBR+1] = copy l[b2:rBR+1], R2 with [bBR:b1+1] = copy r[bBR:b1+1])
+              else (L2, R2)
+            let (L4, R4) =
+              if BRi == bBL / blockSize then
+                let (l,r) = farAwayBlocks_ANSV_linear A rBL (b1) b2 (bBL) (copy L_temp) (copy R_temp)
+                in (L_temp with [b2:bBL+1] = copy l[b2:bBL+1], R_temp with [rBL:b1+1] = copy r[rBL:b1+1])
+              else (L_temp, R_temp)
+            in (L4, R4)
+          else (L2, R2)
+        in (L3, R3)
+        --in (L2, R2)
+  let Lf = L_final[0:n]
+  let Rf = R_final[0:n]
+  in (Lf, Rf)
 
 
 -- entries
@@ -164,6 +155,7 @@ entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : ([]i64, []i64) =
 
 -- ==
 -- entry: findRepresentative_entry
+
 -- input {[5i64,2i64,7i64,2i64,9i64]}
 -- output {1i64}
 -- input {[3i64,1i64,4i64,0i64]}
@@ -172,6 +164,7 @@ entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : ([]i64, []i64) =
 
 -- ==
 -- entry: adjacentMerge_entry
+
 -- input {[5i64,2i64,6i64,1i64,4i64] [-1i64,-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64,-1i64] 0i64}
 -- output {[-1i64,-1i64,1i64,-1i64,3i64] [1i64,3i64,3i64,-1i64,-1i64]}
 -- input {[1i64,2i64,3i64,4i64] [-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64] 0i64}
@@ -191,6 +184,7 @@ entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : ([]i64, []i64) =
 
 -- ==
 -- entry: findLeftRightMatch_entry
+
 -- input {[5i64,1i64,9i64,10i64,4i64,6i64] 4i64}
 -- output {[1i64,-1i64]}
 -- input {[8i64,6i64,7i64,5i64,3i64,4i64] 2i64}
@@ -199,6 +193,7 @@ entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : ([]i64, []i64) =
 
 -- ==
 -- entry: farAwayBlocks_entry
+
 -- input {[8i64,6i64,7i64,5i64,3i64,4i64] 0i64 2i64 3i64 5i64 [-1i64,-1i64,-1i64] [-1i64,76i64,-1i64]}
 -- output {[-1i64,-1i64,-1i64,] [3i64,76i64,3i64]}
 -- input {[5i64,3i64] 0i64 0i64 1i64 1i64 [-1i64,-1i64] [-1i64,-1i64]}
@@ -215,6 +210,11 @@ entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : ([]i64, []i64) =
 
 -- ==
 -- entry: ANSV_Berkman_entry
+-- input {[6i64,5i64,7i64,4i64,9i64,2i64] 2i64}
+-- output {[-1i64,-1i64,1i64,-1i64,3i64,-1i64] [1i64,3i64,3i64,5i64,5i64,-1i64]}
+
+
+
 -- input {[5i64,1i64,9i64,10i64,4i64,6i64] 2i64}
 -- output {[-1i64,-1i64,1i64,2i64,1i64,4i64] [1i64,-1i64,4i64,4i64,-1i64,-1i64]}
 -- input {[3i64,1i64,4i64,2i64,5i64] 1i64}
@@ -253,8 +253,7 @@ entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : ([]i64, []i64) =
 -- output {[-1i64,0i64,-1i64,2i64] [2i64,2i64,-1i64,-1i64]}
 -- input {[3i64,1i64,4i64,2i64,5i64,0i64] 2i64}
 -- output {[-1i64,-1i64,1i64,1i64,3i64,-1i64] [1i64,5i64,3i64,5i64,5i64,-1i64]}
--- input {[6i64,5i64,7i64,4i64,9i64,2i64] 2i64}
--- output {[-1i64,-1i64,1i64,-1i64,3i64,-1i64] [1i64,3i64,3i64,5i64,5i64,-1i64]}
+
 
 
 

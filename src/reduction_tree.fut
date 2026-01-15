@@ -84,8 +84,8 @@ module mk_mintree
     type t
     val highest : t
     val min : t -> t -> t
-    val (<=) : t -> t -> bool
-    val (<) : t -> t -> bool
+    val <= : t -> t -> bool
+    val < : t -> t -> bool
   })
   : ordered_reduction_tree with t = O.t = {
   module T = transparent_reduction_tree
@@ -114,8 +114,8 @@ module mk_maxtree
     type t
     val lowest : t
     val max : t -> t -> t
-    val (>=) : t -> t -> bool
-    val (>) : t -> t -> bool
+    val >= : t -> t -> bool
+    val > : t -> t -> bool
   })
   : ordered_reduction_tree with t = O.t = {
   module T = transparent_reduction_tree
