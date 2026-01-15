@@ -1,12 +1,15 @@
-FUTHARK = futhark test --backend=c
+FUTHARK = futhark test --backend=opencl
 
-test: bsz bsz2
+test: bsz_mintree_gpu bsz_mintree_cpu bsz_seq
 
-bsz:
-	$(FUTHARK) BSZ.fut
+bsz_mintree_gpu:
+	$(FUTHARK) bsz_mintree_gpu.fut
 
-bsz2:
-	$(FUTHARK) BSZ2.fut
+bsz_mintree_cpu:
+	$(FUTHARK) bsz_mintree_cpu.fut
+
+bsz_seq:
+	$(FUTHARK) bsz_seq.fut
 
 clean:
-	rm -rf BSZ BSZ2 *.c
+	rm -rf bsz_seq bsz_mintree_cpu bsz_mintree_gpu *.c

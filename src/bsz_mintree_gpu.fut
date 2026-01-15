@@ -25,7 +25,13 @@ let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
     let B = unflatten A
 
     -- Sequentially find matches in each block
-    let R_local = map SEQ B
+    let R_local : [num_blocks][k]i64 =
+        -- Initialise the unique ownership result 2D array with -1
+        let R0 : *[num_blocks][k]i64 = replicate num_blocks (replicate k (-1i64))
+        in loop (R : *[num_blocks][k]i64) = R0 for b < num_blocks do
+            R with [b] = SEQ (B[b])
+
+
     let R_temp = flatten R_local :> [n]i64
 
     let t = mintree.make A
