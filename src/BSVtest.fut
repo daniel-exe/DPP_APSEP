@@ -7,7 +7,6 @@ let findRepresentative [n] (arr: [n]i64) : i64 =
   reduce (\i1 i2 -> if arr[i2] < arr[i1] then i2 else i1) 0 (iota n)
 
 -- Far-away merging (linear merge of blocks)
--- Assumptions: no duplicate blocks, and unmatched in a-b and c-d are ascending.
 let farAwayBlocks_ANSV_linear [n] [m]
   (A: []i64) (a: i64) (b: i64) (c: i64) (d: i64)
   (L: [n]i64) (R: [m]i64) : ([n]i64, [m]i64) =
@@ -24,9 +23,9 @@ let farAwayBlocks_ANSV_linear [n] [m]
               let Right' = if Right[i-a] == -1 then Right with [i-a] = j else Right
               in (Left, Right', i - 1, j)
           else if j <= d then
-            (Left, Right, i, j+1)
+            (Left, Right, i, j + 1)
           else
-            (Left, Right, i-1, j)
+            (Left, Right, i - 1, j)
     in (Lf, Rf)
 
 -- Find left and right match of a representative using the tree
@@ -138,125 +137,67 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
   let I4 = (flatten I4)
   let L4 = scatter (copy L3) I4 (flatten L4)
   let R4 = scatter (copy R3) I4 (flatten R4)
-  in (L4, R4)
+  in (L1, R1)
 
-
--- entries
 
 entry findRepresentative_entry [n] (A: [n]i64) : i64 =
   findRepresentative A
 
-entry farAwayBlocks_entry [n] [m]
-  (A: []i64) (a: i64) (b: i64) (c: i64) (d: i64)
-  (L: [n]i64) (R: [m]i64) : ([n]i64, [m]i64) =
-  farAwayBlocks_ANSV_linear A a b c d L R
 
 entry findLeftRightMatch_entry (A: []i64) (i: i64) : []i64 =
   let tree = mintree.make A
   let (l,r) = findLeftRightMatch tree i
   in [l,r]
 
-entry adjacentMerge_entry [n] (A: []i64) (L: [n]i64) (R: [n]i64) (offset: i64) : ([n]i64, [n]i64) =
-  adjacentMergeBOTH A L R offset
 
 entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : ([]i64, []i64) =
   ANSV_Berkman A blockSize
 
+entry adjacentMerge_entry [n] (A: []i64) (L: [n]i64) (R: [n]i64) (offset: i64) : ([n]i64, [n]i64) =
+  adjacentMergeBOTH A L R offset
 
--- ==
--- entry: findRepresentative_entry
--- input {[5i64,2i64,7i64,2i64,9i64]}
--- output {1i64}
--- input {[3i64,1i64,4i64,0i64]}
--- output {3i64}
-
-
--- ==
--- entry: adjacentMerge_entry
--- input {[5i64,2i64,6i64,1i64,4i64] [-1i64,-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64,-1i64] 0i64}
--- output {[-1i64,-1i64,1i64,-1i64,3i64] [1i64,3i64,3i64,-1i64,-1i64]}
--- input {[1i64,2i64,3i64,4i64] [-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64] 0i64}
--- output {[-1i64,0i64,1i64,2i64] [-1i64,-1i64,-1i64,-1i64]}
--- input {[4i64,3i64,2i64,1i64] [-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64] 0i64}
--- output {[-1i64,-1i64,-1i64,-1i64] [1i64,2i64,3i64,-1i64]}
--- input {[42i64] [-1i64] [-1i64] 0i64}
--- output {[-1i64] [-1i64]}
--- input {[5i64,4i64,3i64,4i64,5i64] [-1i64,-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64,-1i64] 0i64}
--- output {[-1i64,-1i64,-1i64,2i64,3i64] [1i64,2i64,-1i64,-1i64,-1i64]}
--- input {[9i64,8i64,5i64,6i64,7i64] [-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64] 2i64}
--- output {[-1i64,2i64,3i64] [-1i64,-1i64,-1i64]}
--- input {[9i64,9i64,9i64,9i64,9i64] [-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64] 2i64}
--- output {[-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64]}
--- input {[5i64,1i64,9i64,10i64,4i64,6i64] [-1i64,1i64,-1i64,-1i64] [-1i64,-1i64,4i64,-1i64] 1i64}
--- output {[-1i64,1i64,2i64,1i64] [-1i64,4i64,4i64,-1i64] }
-
--- ==
--- entry: findLeftRightMatch_entry
--- input {[5i64,1i64,9i64,10i64,4i64,6i64] 4i64}
--- output {[1i64,-1i64]}
--- input {[8i64,6i64,7i64,5i64,3i64,4i64] 2i64}
--- output {[1i64,3i64]}
-
-
--- ==
--- entry: farAwayBlocks_entry
--- input {[8i64,6i64,7i64,5i64,3i64,4i64] 0i64 2i64 3i64 5i64 [-1i64,-1i64,-1i64] [-1i64,76i64,-1i64]}
--- output {[-1i64,-1i64,-1i64,] [3i64,76i64,3i64]}
--- input {[5i64,3i64] 0i64 0i64 1i64 1i64 [-1i64,-1i64] [-1i64,-1i64]}
--- output {[-1i64,-1i64] [1i64,-1i64]}
--- input {[1i64,2i64,3i64,10i64,11i64] 0i64 2i64 3i64 4i64 [-1i64,-1i64] [-1i64,-1i64,-1i64]}
--- output {[2i64,2i64] [-1i64,-1i64,-1i64]}
--- input {[10i64,9i64,8i64,1i64,2i64] 0i64 2i64 3i64 4i64 [-1i64,-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64,-1i64]}
--- output {[-1i64,-1i64,-1i64,-1i64,-1i64] [3i64,3i64,3i64,-1i64,-1i64]}
--- input {[5i64,1i64,4i64,2i64,3i64] 0i64 2i64 3i64 4i64 [-1i64,-1i64] [-1i64,-1i64,-1i64]}
--- output {[1i64,1i64] [-1i64,-1i64,3i64]}
--- input {[3i64,3i64,3i64,3i64] 0i64 1i64 2i64 3i64 [-1i64,-1i64] [-1i64,-1i64]}
--- output {[-1i64,-1i64] [2i64,2i64]}
+entry farAwayBlocks_entry [n]
+  (A: []i64) (a: i64) (b: i64) (c: i64) (d: i64)
+  (L: [n]i64) (R: [n]i64) : ([n]i64, [n]i64) =
+  farAwayBlocks_ANSV_linear A a b c d L R
 
 
 -- ==
 -- entry: ANSV_Berkman_entry
--- input {[5i64,1i64,9i64,10i64,4i64,6i64] 2i64}
--- output {[-1i64,-1i64,1i64,2i64,1i64,4i64] [1i64,-1i64,4i64,4i64,-1i64,-1i64]}
--- input {[3i64,1i64,4i64,2i64,5i64] 1i64}
--- output {[-1i64,-1i64,1i64,1i64,3i64] [1i64,-1i64,3i64,-1i64,-1i64]}
--- input {[3i64,1i64,2i64,-1i64,6i64] 2i64}
--- output {[-1i64,-1i64,1i64,-1i64,3i64] [1i64,3i64,3i64,-1i64,-1i64]}
--- input {[3i64,1i64,4i64,5i64] 2i64}
--- output {[-1i64,-1i64,1i64,2i64] [1i64,-1i64,-1i64,-1i64]}
--- input {[2i64,1i64,3i64,4i64] 2i64}
--- output {[-1i64,-1i64,1i64,2i64] [1i64,-1i64,-1i64,-1i64]}
--- input {[4i64,3i64,1i64,2i64] 2i64}
--- output {[-1i64,-1i64,-1i64,2i64] [1i64,2i64,-1i64,-1i64]}
--- input {[3i64,2i64,1i64,4i64] 2i64}
--- output {[-1i64,-1i64,-1i64,2i64] [1i64,2i64,-1i64,-1i64]}
--- input {[2i64,2i64,2i64,2i64] 2i64}
--- output {[-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64]}
--- input {[7i64,6i64,5i64,8i64,9i64] 3i64}
--- output {[-1i64,-1i64,-1i64,2i64,3i64] [1i64,2i64,-1i64,-1i64,-1i64]}
--- input {[1i64,2i64,3i64,4i64,5i64] 2i64}
--- output {[-1i64,0i64,1i64,2i64,3i64] [-1i64,-1i64,-1i64,-1i64,-1i64]}
--- input {[5i64,4i64,3i64,2i64,1i64] 2i64}
--- output {[-1i64,-1i64,-1i64,-1i64,-1i64] [1i64,2i64,3i64,4i64,-1i64]}
--- input {[4i64,1i64,3i64,2i64] 2i64}
--- output {[-1i64,-1i64,1i64,1i64] [1i64,-1i64,3i64,-1i64]}
--- input {[1i64] 2i64}
--- output {[-1i64] [-1i64]}
--- input {[1i64,2i64,3i64,4i64,5i64] 2i64}
--- output {[-1i64,0i64,1i64,2i64,3i64] [-1i64,-1i64,-1i64,-1i64,-1i64]}
--- input {[5i64,4i64,3i64,2i64,1i64] 2i64}
--- output {[-1i64,-1i64,-1i64,-1i64,-1i64] [1i64,2i64,3i64,4i64,-1i64]}
--- input {[2i64,2i64,2i64,2i64] 2i64}
--- output {[-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64]}
--- input {[5i64,1i64,2i64,3i64] 2i64}
--- output {[-1i64,-1i64,1i64,2i64] [1i64,-1i64,-1i64,-1i64]}
--- input {[2i64,3i64,1i64,4i64] 2i64}
--- output {[-1i64,0i64,-1i64,2i64] [2i64,2i64,-1i64,-1i64]}
--- input {[3i64,1i64,4i64,2i64,5i64,0i64] 2i64}
+-- input {[0i64,5i64,1i64,0i64,0i64,0i64] 2i64}
+-- output {[-1i64,0i64,0i64,-1i64,-1i64,-1i64][-1i64,2i64,3i64,-1i64,-1i64,-1i64]}
+
+-- input {[3i64,1i64  ,4i64,2i64  ,5i64,0i64] 2i64}
 -- output {[-1i64,-1i64,1i64,1i64,3i64,-1i64] [1i64,5i64,3i64,5i64,5i64,-1i64]}
 -- input {[6i64,5i64,7i64,4i64,9i64,2i64] 2i64}
 -- output {[-1i64,-1i64,1i64,-1i64,3i64,-1i64] [1i64,3i64,3i64,5i64,5i64,-1i64]}
 
+-- if block(right smaller of left smaller) == block(right smaller)
+-- if block(left smaller of right smaller) == block(left smaller)
+
+-- input {[3i64,1i64   ,4i64,2i64   ,5i64,0i64] 2i64}
+-- output {[-1i64,-1i64,1i64,1i64,3i64,-1i64] [1i64,-1i64,3i64,5i64,5i64,-1i64]}
+-- input {[6i64,5i64  ,7i64,4i64  ,9i64,2i64] 2i64}
+-- output {[-1i64,-1i64,1i64,-1i64,3i64,-1i64] [1i64,3i64,3i64,5i64,5i64,-1i64]}
+-- only if smaller of rep is in right [3-5] ![1-3,3-5] ERR     
+
+ 
+-- input {[3i64,1i64,4i64,2i64,5i64,0i64] 2i64}
+-- output {[-1i64,-1i64,1i64,1i64,-1i64,-1i64] [1i64,-1i64,3i64,-1i64,5i64,-1i64]}
+-- input {[6i64,5i64,7i64,4i64,9i64,2i64] 2i64}
+-- output {[-1i64,-1i64,-1i64,-1i64,-1i64,-1i64] [1i64,-1i64,3i64,-1i64,5i64,-1i64]}
+-- only if smaller of rep is in left. [1-3] []
+
+-- input {[3i64,1i64,4i64,2i64,5i64,0i64] 2i64}
+-- output {[-1i64,-1i64,-1i64,-1i64,-1i64,-1i64] [1i64,-1i64,3i64,-1i64,5i64,-1i64]}
+-- input {[6i64,5i64,7i64,4i64,9i64,2i64] 2i64}
+-- output {[-1i64,-1i64,-1i64,-1i64,-1i64,-1i64] [1i64,-1i64,3i64,-1i64,5i64,-1i64]}
+-- within blocks only
+
+-- input {[3i64,1i64,4i64,2i64,5i64,0i64] 2i64}
+-- output {[-1i64,-1i64,1i64,1i64,3i64,-1i64] [1i64,5i64,3i64,5i64,5i64,-1i64]}
+-- input {[6i64,5i64,7i64,4i64,9i64,2i64] 2i64}
+-- output {[-1i64,-1i64,1i64,-1i64,3i64,-1i64] [1i64,3i64,3i64,5i64,5i64,-1i64]}
 
 
 
