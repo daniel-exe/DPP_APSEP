@@ -76,6 +76,8 @@ module type ordered_reduction_tree = {
   --
   -- **Span:** *O(1)*
   val strict_next : tree -> i64 -> i64
+
+  val minimum : tree -> t
 }
 
 -- | Make a binary reduction tree of minima.
@@ -106,6 +108,9 @@ module mk_mintree
 
   def strict_next (tree: tree) (i: i64) : i64 =
     T.next (O.<) tree i
+
+  def minimum tree : t =
+    (T.to_array tree)[0]
 }
 
 -- | Make a binary reduction tree of maxima.
@@ -136,4 +141,8 @@ module mk_maxtree
 
   def strict_next (tree: tree) (i: i64) : i64 =
     T.next (O.>) tree i
+
+  -- Had to do this for the type checker
+  def minimum tree : t =
+    (T.to_array tree)[0]
 }

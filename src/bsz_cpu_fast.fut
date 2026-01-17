@@ -4,12 +4,10 @@ import "reduction_tree"
 module mintree = mk_mintree i32
 
 
-let SEQ [n] (A: [n]i32) : [n]i64 =
-    let tmp = map (\idx -> loop (j, result) = (idx - 1, -1i64) while j >= 0 && result == -1i64 do
-        let result' = if A[j] < A[idx] then j else result
-        in (j - 1, result')
-    ) (iota n)
-    in (unzip tmp) .1
+let SEQ [n] (A: [n]i32) : ([n]i64, mintree.tree) =
+    let t = mintree.make A
+    in  (map (\i -> mintree.strict_previous t i) (iota n), t)
+
 
 
 let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
@@ -22,16 +20,33 @@ let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
     let B = unflatten A
 
     -- Sequentially find matches in each block
-    let R_local = map SEQ B
+    let (R_local, trees) = unzip (map SEQ B)
+
     let R_temp = flatten R_local :> [n]i64
 
-    let t = mintree.make A
+    let block_mins = map mintree.minimum trees
 
     -- Fixes indices and calculates correct indices across blocks
     in map2 (\idx x ->
             if x != -1i64
             then ((idx / k) * k) + x
-            else mintree.strict_previous t idx
+            else
+                let b = idx / k
+                let v = A[idx]
+                let (block, found) = loop (block, found) = (b - 1, false)
+                    while block >= 0 && !found do
+                    let found' = block_mins[block] < v
+                    in (block - 1i64, found')
+
+                in if found
+                then
+                    let value = (loop (i, result) = (block*num_blocks, -1i64) while i >= 0 && result == -1i64 do
+                        let result' = if A[i] < A[idx] then i else result
+                        in (i - 1, result')).1
+                    in value
+
+                else -1
+
         ) (iota n) R_temp
 
 

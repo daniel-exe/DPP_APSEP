@@ -1,13 +1,7 @@
 import "reduction_tree"
 
 
-module mintree = mk_mintree {
-    type t = i32
-    let highest = 2147483647i32
-    let min (x: i32) (y: i32) : i32 = if x < y then x else y
-    let (<=) (x: i32) (y: i32) : bool = x <= y
-    let (<)  (x: i32) (y: i32) : bool = x < y
-}
+module mintree = mk_mintree i32
 
 
 let SEQ [n] (A: [n]i32) : [n]i64 =
