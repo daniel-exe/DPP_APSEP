@@ -12,17 +12,17 @@ let SEQ [n] (A: [n]i32) : [n]i64 =
 let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
 
 
-    let num_blocks = n/k
-    let A = A :> [num_blocks*k]i32
+    let block_size = n/k
+    let A = A :> [block_size*k]i32
 
     -- Split input array up
     let B = unflatten A
 
     -- Sequentially find matches in each block
-    let R_local : [num_blocks][k]i64 =
+    let R_local : [block_size][k]i64 =
         -- Initialise the unique ownership result 2D array with -1
-        let R0 : *[num_blocks][k]i64 = replicate num_blocks (replicate k (-1i64))
-        in loop (R : *[num_blocks][k]i64) = R0 for b < num_blocks do
+        let R0 : *[block_size][k]i64 = replicate block_size (replicate k (-1i64))
+        in loop (R : *[block_size][k]i64) = R0 for b < block_size do
             R with [b] = SEQ (B[b])
 
 

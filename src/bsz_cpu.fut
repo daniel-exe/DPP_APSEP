@@ -1,4 +1,4 @@
-import "reduction_tree"
+import "reduction_tree2"
 
 
 module mintree = mk_mintree i32
@@ -12,8 +12,8 @@ let SEQ [n] (A: [n]i32) : [n]i64 =
 let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
 
 
-    let num_blocks = n/k
-    let A = A :> [num_blocks*k]i32
+    let block_size = n/k
+    let A = A :> [block_size*k]i32
 
     -- Split input array up
     let B = unflatten A

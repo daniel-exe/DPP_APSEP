@@ -1,10 +1,10 @@
-import "reduction_tree"
+import "reduction_tree2"
 
 
 module mintree = mk_mintree i32
 
 
-let SEQ [n] (A: [n]i32) : ([n]i64, mintree.tree) =
+let SEQ [n] (A: [n]i32) : ([n]i64, mintree.tree [n]) =
     let t = mintree.make A
     in  (map (\i -> mintree.strict_previous t i) (iota n), t)
 
@@ -13,11 +13,11 @@ let SEQ [n] (A: [n]i32) : ([n]i64, mintree.tree) =
 let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
 
 
-    let num_blocks = n/k
-    let A = A :> [num_blocks*k]i32
+    let block_size = n/k
+    let A = A :> [k*block_size]i32
 
     -- Split input array up
-    let B = unflatten A
+    let B : [k][block_size]i32 = unflatten A
 
     -- Sequentially find matches in each block
     let (R_local, trees) = unzip (map SEQ B)
@@ -29,19 +29,22 @@ let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
     -- Fixes indices and calculates correct indices across blocks
     in map2 (\idx x ->
             if x != -1i64
-            then ((idx / k) * k) + x
+            then ((idx / block_size) * block_size) + x
             else
-                let b = idx / k
+                let b = idx / block_size
                 let v = A[idx]
                 let (block, found) = loop (block, found) = (b - 1, false)
                     while block >= 0 && !found do
                     let found' = block_mins[block] < v
-                    in (block - 1i64, found')
+                    let block = if found'
+                        then block
+                        else block -1
+                    in (block, found')
 
                 in if found
                 then
-                    let value = (loop (i, result) = (block*num_blocks, -1i64) while i >= 0 && result == -1i64 do
-                        let result' = if A[i] < A[idx] then i else result
+                    let value = (loop (i, result) = (block*block_size + block_size - 1, -1i64) while i >= 0 && result == -1i64 do
+                        let result' = if A[i] < v then i else result
                         in (i - 1, result')).1
                     in value
 
