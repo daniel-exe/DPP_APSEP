@@ -13,7 +13,7 @@ let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
     -- Make mintrees in parallel
     let trees = map (\b -> transparent_reduction_tree.make i32.min i32.highest b ) B
 
-    let R_local = map (\t -> map (\i -> transparent_reduction_tree.previous (<=) t i) (iota block_size)) trees
+    let R_local = map (\t -> map (\i -> transparent_reduction_tree.previous (<) t i) (iota block_size)) trees
 
     let R_temp = flatten R_local :> [n]i64
 
@@ -22,8 +22,8 @@ let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
     -- Fixes indices and calculates correct indices across blocks
     in map2 (\idx x ->
             if x != -1i64
-            then ((idx / k) * k) + x
-            else transparent_reduction_tree.previous (<=) t idx
+            then ((idx / block_size) * block_size) + x
+            else transparent_reduction_tree.previous (<) t idx
         ) (iota n) R_temp
 
 

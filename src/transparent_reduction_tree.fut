@@ -122,7 +122,7 @@ module transparent_reduction_tree : transparent_reduction_tree = {
       while level >= 0 do
         let new_size = new_size / 2
         let new_arr =
-          scatter arr
+          scatter (copy arr)
                   (iota new_size)
                   (tabulate new_size (\i -> arr[2 * i] `op` arr[2 * i + 1]))
         let offset = size_from_height level

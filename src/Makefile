@@ -28,4 +28,4 @@ test_bsz_seq:
 	$(TEST) bsz_seq.fut
 
 clean:
-	rm -rf data bsz_cpu_copy bsz_cpu_fast bsz_seq bsz_cpu bsz_gpu bench_cpu bench_gpu bsv_seq bsv *.c *.json
+	rm -rf data bsz bsz_fast bsz_cpu_copy bsz_cpu_fast bsz_seq bsz_cpu bsz_gpu bench_cpu bench_gpu bsv_seq bsv *.c *.json
