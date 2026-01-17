@@ -42,7 +42,15 @@ entry bench_linear_strict_previous [n] (A: [n]i32) : [n]i64 =
 -- ==
 -- entry: bench_bsz
 -- compiled random input { [1048576]i32 256i64 }
+-- compiled random input { [1048576]i32 512i64 }
+-- compiled random input { [1048576]i32 1024i64 }
+-- compiled random input { [1048576]i32 2048i64 }
+-- compiled random input { [1048576]i32 4096i64 }
+-- compiled random input { [4194304]i32 256i64 }
 -- compiled random input { [4194304]i32 512i64 }
+-- compiled random input { [4194304]i32 1024i64 }
+-- compiled random input { [4194304]i32 2048i64 }
+-- compiled random input { [4194304]i32 4096i64 }
 entry bench_bsz [n] (A: [n]i32) (k: i64) : [n]i64 =
   bsz.BSZ A k
 
@@ -50,7 +58,15 @@ entry bench_bsz [n] (A: [n]i32) (k: i64) : [n]i64 =
 -- ==
 -- entry: bench_bsz_fast
 -- compiled random input { [1048576]i32 256i64 }
+-- compiled random input { [1048576]i32 512i64 }
+-- compiled random input { [1048576]i32 1024i64 }
+-- compiled random input { [1048576]i32 2048i64 }
+-- compiled random input { [1048576]i32 4096i64 }
+-- compiled random input { [4194304]i32 256i64 }
 -- compiled random input { [4194304]i32 512i64 }
+-- compiled random input { [4194304]i32 1024i64 }
+-- compiled random input { [4194304]i32 2048i64 }
+-- compiled random input { [4194304]i32 4096i64 }
 entry bench_bsz_fast [n] (A: [n]i32) (k: i64) : [n]i64 =
   bsz_fast.BSZ A k
 
@@ -60,6 +76,14 @@ entry bench_bsz_fast [n] (A: [n]i32) (k: i64) : [n]i64 =
 -- ==
 -- entry: bench_bsv
 -- compiled random input { [1048576]i64 256i64 }
+-- compiled random input { [1048576]i64 512i64 }
+-- compiled random input { [1048576]i64 1024i64 }
+-- compiled random input { [1048576]i64 2048i64 }
+-- compiled random input { [1048576]i64 4096i64 }
+-- compiled random input { [4194304]i64 256i64 }
 -- compiled random input { [4194304]i64 512i64 }
+-- compiled random input { [4194304]i64 1024i64 }
+-- compiled random input { [4194304]i64 2048i64 }
+-- compiled random input { [4194304]i64 4096i64 }
 entry bench_bsv [n] (A: [n]i64) (k: i64) : ([n]i64, [n]i64) =
   bsv.ANSV_Berkman A k

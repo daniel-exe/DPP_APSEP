@@ -23,4 +23,4 @@ test_bsz_fast:
 	$(TEST) bsz_fast.fut
 
 clean:
-	rm -rf data bsz bsz_fast bsv bench_cpu bench_gpu *.c *.json
+	rm -rf data bsz bsz_fast bsv bench *.c *.json
