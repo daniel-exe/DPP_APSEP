@@ -1,12 +1,4 @@
-import "reduction_tree"
-
-
-module mintree = mk_mintree i32
-
-
-let SEQ [n] (A: [n]i32) : [n]i64 =
-    let t = mintree.make A
-    in map (\i -> mintree.strict_previous t i) (iota n)
+import "transparent_reduction_tree"
 
 
 let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
@@ -19,17 +11,19 @@ let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
     let B = unflatten A
 
     -- Make mintrees in parallel
-    let R_local = map SEQ B
+    let trees = map (\b -> transparent_reduction_tree.make i32.min i32.highest b ) B
+
+    let R_local = map (\t -> map (\i -> transparent_reduction_tree.previous (<=) t i) (iota block_size)) trees
 
     let R_temp = flatten R_local :> [n]i64
 
-    let t = mintree.make A
+    let t = transparent_reduction_tree.make i32.min i32.highest A
 
     -- Fixes indices and calculates correct indices across blocks
     in map2 (\idx x ->
             if x != -1i64
             then ((idx / k) * k) + x
-            else mintree.strict_previous t idx
+            else transparent_reduction_tree.previous (<=) t idx
         ) (iota n) R_temp
 
 
