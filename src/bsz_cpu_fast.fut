@@ -19,7 +19,7 @@ let BSZ [n] (A: [n]i32) (k: i64) : [n]i64 =
     -- Split input array up
     let B : [k][block_size]i32 = unflatten A
 
-    -- Sequentially find matches in each block
+    -- Make mintrees in parallel
     let (R_local, trees) = unzip (map SEQ B)
 
     let R_temp = flatten R_local :> [n]i64
