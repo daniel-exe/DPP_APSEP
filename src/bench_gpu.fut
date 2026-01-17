@@ -1,10 +1,12 @@
--- Benchmark harness: compare 3 BSZ implementations vs baselines.
+-- Benchmark harness: compare 2 BSZ and 2 BSV implementations vs baselines.
 --
 -- BSZ implementations assume k divides n.
 
 module bsz_seq = import "bsz_seq"
-module bsz_cpu = import "bsz_mintree_cpu"
-module bsz_gpu = import "bsz_mintree_gpu"
+module bsz_cpu = import "bsz_cpu"
+module bsz_gpu = import "bsz_gpu"
+module bsv_seq = import "bsv_seq"
+module bsv = import "bsv"
 
 module rt  = import "reduction_tree"
 module rtt = import "reduction_tree_test"
@@ -53,3 +55,19 @@ entry bench_bsz_seq [n] (A: [n]i32) (k: i64) : [n]i64 =
 -- compiled random input { [4194304]i32 512i64 }
 entry bench_bsz_mintree_gpu [n] (A: [n]i32) (k: i64) : [n]i64 =
   bsz_gpu.BSZ A k
+
+-- bsv_seq.fut:
+-- ==
+-- entry: bench_bsv_seq
+-- compiled random input { [1048576]i64 256i64 }
+-- compiled random input { [4194304]i64 512i64 }
+entry bench_bsv_seq [n] (A: [n]i64) (k: i64) : ([n]i64, [n]i64) =
+  bsv_seq.ANSV_Berkman A k
+
+-- bsv.fut:
+-- ==
+-- entry: bench_bsv
+-- compiled random input { [1048576]i64 256i64 }
+-- compiled random input { [4194304]i64 512i64 }
+entry bench_bsv [n] (A: [n]i64) (k: i64) : ([n]i64, [n]i64) =
+  bsv_seq.ANSV_Berkman A k

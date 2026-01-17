@@ -2,7 +2,7 @@ TEST = futhark test --backend=multicore
 BENCH_MULTICORE = futhark bench --backend=multicore
 BENCH_CUDA = futhark bench --backend=cuda
 
-test: test_bsz_mintree_gpu test_bsz_mintree_cpu test_bsz_seq test_bsv_seq test_bsv
+test: test_bsz_gpu test_bsz_cpu test_bsz_seq test_bsv_seq test_bsv
 
 bench_multicore:
 	$(BENCH_MULTICORE) bench_cpu.fut
@@ -19,13 +19,13 @@ test_bsv:
 	$(TEST) bsv.fut
 
 test_bsz_mintree_gpu:
-	$(TEST) bsz_mintree_gpu.fut
+	$(TEST) bsz_gpu.fut
 
 test_bsz_mintree_cpu:
-	$(TEST) bsz_mintree_cpu.fut
+	$(TEST) bsz_cpu.fut
 
 test_bsz_seq:
 	$(TEST) bsz_seq.fut
 
 clean:
-	rm -rf data bsz_seq bsz_mintree_cpu bsz_mintree_gpu bench_cpu bench_gpu bsv_seq bsv *.c *.json
+	rm -rf data bsz_seq bsz_cpu bsz_gpu bench_cpu bench_gpu bsv_seq bsv *.c *.json
