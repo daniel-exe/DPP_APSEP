@@ -1,10 +1,9 @@
--- Benchmark harness: compare 3 BSZ and 1 BSV implementations vs baselines.
+-- Benchmark harness: compare 2 BSZ and 1 BSV implementations vs baselines.
 --
 -- BSZ implementations assume k divides n.
 
-module bsz_seq = import "bsz_seq"
-module bsz_cpu = import "bsz_cpu"
-module bsz_gpu = import "bsz_gpu"
+module bsz = import "bsz"
+module bsz_fast = import "bsz_fast"
 module bsv = import "bsv"
 
 module rt  = import "reduction_tree"
@@ -39,31 +38,23 @@ entry bench_linear_strict_previous [n] (A: [n]i32) : [n]i64 =
 
 -- BSZ implementations
 
--- bsz_seq.fut: local matches via naive scan inside each block.
+-- bsz.fut: local matches via naive scan inside each block.
 -- ==
--- entry: bench_bsz_seq
+-- entry: bench_bsz
 -- compiled random input { [1048576]i32 256i64 }
 -- compiled random input { [4194304]i32 512i64 }
-entry bench_bsz_seq [n] (A: [n]i32) (k: i64) : [n]i64 =
-  bsz_seq.BSZ A k
+entry bench_bsz [n] (A: [n]i32) (k: i64) : [n]i64 =
+  bsz.BSZ A k
 
--- bsz_cpu.fut: local matches via per-block mintree queries using map.
+-- bsz_fast.fut: local matches via per-block mintree queries using map.
 -- ==
--- entry: bench_bsz_cpu
+-- entry: bench_bsz_fast
 -- compiled random input { [1048576]i32 256i64 }
 -- compiled random input { [4194304]i32 512i64 }
-entry bench_bsz_cpu [n] (A: [n]i32) (k: i64) : [n]i64 =
-  bsz_cpu.BSZ A k
+entry bench_bsz_fast [n] (A: [n]i32) (k: i64) : [n]i64 =
+  bsz_fast.BSZ A k
 
--- bsz_gpu.fut: local matches via sequential loop filling a unique 2D array.
--- ==
--- entry: bench_bsz_gpu
--- compiled random input { [1048576]i32 256i64 }
--- compiled random input { [4194304]i32 512i64 }
-entry bench_bsz_gpu [n] (A: [n]i32) (k: i64) : [n]i64 =
-  bsz_gpu.BSZ A k
-
--- BSV implementations
+-- BSV implementation
 
 -- bsv.fut:
 -- ==
