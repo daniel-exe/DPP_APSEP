@@ -54,7 +54,7 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
   let tree = mintree.make A
 
   let blockCount = (n + blockSize - 1) / blockSize
-  
+
   let (L_blocks, R_blocks, REPs, B_blocks) =
     iota blockCount
     |> map (\blockNumber ->
@@ -65,9 +65,11 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
         let (L_block, R_block) =
           let (l, r) = adjacentMergeBOTH A (copy L_block[0:len]) (copy R_block[0:len]) start
         in (L_block with [0:len] = copy l, R_block with [0:len] = copy r)
-        let block = A[start:(start+len)] 
+        let block = A[start:(start+len)]
         let ri = start + findRepresentative block
-        let (b1, b2) = findLeftRightMatch tree ri
+        let (b1_raw, b2_raw) = findLeftRightMatch tree ri
+        let b1 = if 0i64 <= b1_raw && b1_raw < n then b1_raw else -1i64
+        let b2 = if 0i64 <= b2_raw && b2_raw < n then b2_raw else -1i64
         in (L_block, R_block, ri, (b1, b2))
       )
     |> unzip4
@@ -112,13 +114,13 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
             let ((_,bBL), (bBR,_)) = (B_blocks[BLi], B_blocks[BRi])
             let (L_temp, R_temp) =
               if BLi == bBR / blockSize then
-                let (l,r) = farAwayBlocks_ANSV_linear A bBR (b1) b2 (rBR) (copy L2) (copy R2)
-                in (L2 with [b2:rBR+1] = copy l[b2:rBR+1], R2 with [bBR:b1+1] = copy r[bBR:b1+1])
+                let (l,r) = farAwayBlocks_ANSV_linear A (bBR+1) b1 b2 rBR (copy L2) (copy R2)
+                in (L2 with [b2:rBR+1] = copy l[b2:rBR+1], R2 with [bBR+1:b1+1] = copy r[bBR+1:b1+1])
               else (L2, R2)
             let (L4, R4) =
               if BRi == bBL / blockSize then
-                let (l,r) = farAwayBlocks_ANSV_linear A rBL (b1) b2 (bBL) (copy L_temp) (copy R_temp)
-                in (L_temp with [b2:bBL+1] = copy l[b2:bBL+1], R_temp with [rBL:b1+1] = copy r[rBL:b1+1])
+                let (l,r) = farAwayBlocks_ANSV_linear A rBL b1 b2 (bBL-1) (copy L_temp) (copy R_temp)
+                in (L_temp with [b2:bBL] = copy l[b2:bBL], R_temp with [rBL:b1+1] = copy r[rBL:b1+1])
               else (L_temp, R_temp)
             in (L4, R4)
           else (L2, R2)
@@ -126,7 +128,13 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
         --in (L2, R2)
   let Lf = L_final[0:n]
   let Rf = R_final[0:n]
-  in (Lf, Rf)
+
+  let L_out =
+    map2 (\i x -> if x == -1i64 then mintree.strict_previous tree i else x) (iota n) Lf
+  let R_out =
+    map2 (\i x -> if x == -1i64 then mintree.strict_next tree i else x) (iota n) Rf
+
+  in (L_out, R_out)
 
 
 -- entries
