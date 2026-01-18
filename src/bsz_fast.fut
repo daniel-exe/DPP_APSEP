@@ -5,15 +5,19 @@ let BSZ [n] (A: [n]i64) (k: i64) : [n]i64 =
 
 
   let block_size = n/k
-  let A = A :> [k*block_size]i64
+  let A = A :> [k * block_size]i64
   let B = unflatten A
 
   -- Make mintrees in parallel
   let trees = map (\b -> transparent_reduction_tree.make i64.min i64.highest b ) B
 
-  let R_local = map (\t -> map (\i -> transparent_reduction_tree.previous (<) t i) (iota block_size)) trees
+  let R_flat =
+    map (\p ->
+      let t = trees[p / block_size]
+      let i = p % block_size
+      in transparent_reduction_tree.previous (<) t i)
+    (iota n)
 
-  let R_temp = flatten R_local :> [n]i64
 
   let block_mins = map (\t -> (transparent_reduction_tree.to_array t)[0] ) trees
 
@@ -41,7 +45,7 @@ let BSZ [n] (A: [n]i64) (k: i64) : [n]i64 =
 
             else -1
 
-        ) (iota n) R_temp
+        ) (iota n) R_flat
 
 
 
