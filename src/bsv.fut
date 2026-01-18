@@ -1,6 +1,6 @@
 -- Berkman & Vishkin ANSV skeleton in Futhark
 
-import "reduction_tree_test"  -- or wherever your binary reduction tree modules are
+import "reduction_tree/reduction_tree_test"  -- or wherever your binary reduction tree modules are
 
 -- For safe slicing
 let slice [m] (xs: [m]i64) (l: i64) (r: i64) : []i64 =

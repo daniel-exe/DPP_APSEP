@@ -2,9 +2,9 @@ TEST = futhark test --backend=multicore
 BENCH_MULTICORE = futhark bench --backend=multicore
 BENCH_CUDA = futhark bench --backend=cuda
 
-test: test_bsv test_bsz test_bsz_fast
+test: test_bsv test_bsz
 
-bench_all: bench_cpu bench_gpu
+bench_all: bench_gpu bench_cpu
 
 bench_cpu:
 	$(BENCH_MULTICORE) bench.fut
@@ -19,8 +19,5 @@ test_bsv:
 test_bsz:
 	$(TEST) bsz.fut
 
-test_bsz_fast:
-	$(TEST) bsz_fast.fut
-
 clean:
-	rm -rf data bsz bsz_fast bsv bench *.c *.json
+	rm -rf data bsz bsv bench *.c *.json
