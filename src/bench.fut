@@ -10,11 +10,11 @@ module rt  = import "reduction_tree"
 module rtt = import "reduction_tree_test"
 
 module mintree = rt.mk_mintree {
-  type t = i32
-  let highest = 2147483647i32
-  let min (x: i32) (y: i32) : i32 = if x < y then x else y
-  let (<=) (x: i32) (y: i32) : bool = x <= y
-  let (<)  (x: i32) (y: i32) : bool = x < y
+  type t = i64
+  let highest = i64.highest
+  let min (x: i64) (y: i64) : i64 = if x < y then x else y
+  let (<=) (x: i64) (y: i64) : bool = x <= y
+  let (<)  (x: i64) (y: i64) : bool = x < y
 }
 
 -- Baselines
@@ -22,18 +22,18 @@ module mintree = rt.mk_mintree {
 -- O(n log n): build reduction tree once, query strict_previous for every i.
 -- ==
 -- entry: bench_mintree_strict_previous
--- compiled random input { [1048576]i32 }
--- compiled random input { [4194304]i32 }
-entry bench_mintree_strict_previous [n] (A: [n]i32) : [n]i64 =
+-- compiled random input { [1048576]i64 }
+-- compiled random input { [4194304]i64 }
+entry bench_mintree_strict_previous [n] (A: [n]i64) : [n]i64 =
   let t = mintree.make A
   in tabulate n (mintree.strict_previous t)
 
 -- O(n^2): naive backwards linear search for every i.
 -- ==
 -- entry: bench_linear_strict_previous
--- compiled random input { [1048576]i32 }
--- compiled random input { [4194304]i32 }
-entry bench_linear_strict_previous [n] (A: [n]i32) : [n]i64 =
+-- compiled random input { [1048576]i64 }
+-- compiled random input { [4194304]i64 }
+entry bench_linear_strict_previous [n] (A: [n]i64) : [n]i64 =
   tabulate n (rtt.backwards_linear_search (<) A)
 
 -- BSZ implementations
@@ -41,33 +41,33 @@ entry bench_linear_strict_previous [n] (A: [n]i32) : [n]i64 =
 -- bsz.fut: local matches via naive scan inside each block.
 -- ==
 -- entry: bench_bsz
--- compiled random input { [1048576]i32 256i64 }
--- compiled random input { [1048576]i32 512i64 }
--- compiled random input { [1048576]i32 1024i64 }
--- compiled random input { [1048576]i32 2048i64 }
--- compiled random input { [1048576]i32 4096i64 }
--- compiled random input { [4194304]i32 256i64 }
--- compiled random input { [4194304]i32 512i64 }
--- compiled random input { [4194304]i32 1024i64 }
--- compiled random input { [4194304]i32 2048i64 }
--- compiled random input { [4194304]i32 4096i64 }
-entry bench_bsz [n] (A: [n]i32) (k: i64) : [n]i64 =
+-- compiled random input { [1048576]i64 256i64 }
+-- compiled random input { [1048576]i64 512i64 }
+-- compiled random input { [1048576]i64 1024i64 }
+-- compiled random input { [1048576]i64 2048i64 }
+-- compiled random input { [1048576]i64 4096i64 }
+-- compiled random input { [4194304]i64 256i64 }
+-- compiled random input { [4194304]i64 512i64 }
+-- compiled random input { [4194304]i64 1024i64 }
+-- compiled random input { [4194304]i64 2048i64 }
+-- compiled random input { [4194304]i64 4096i64 }
+entry bench_bsz [n] (A: [n]i64) (k: i64) : [n]i64 =
   bsz.BSZ A k
 
 -- bsz_fast.fut: local matches via per-block mintree queries using map.
 -- ==
 -- entry: bench_bsz_fast
--- compiled random input { [1048576]i32 256i64 }
--- compiled random input { [1048576]i32 512i64 }
--- compiled random input { [1048576]i32 1024i64 }
--- compiled random input { [1048576]i32 2048i64 }
--- compiled random input { [1048576]i32 4096i64 }
--- compiled random input { [4194304]i32 256i64 }
--- compiled random input { [4194304]i32 512i64 }
--- compiled random input { [4194304]i32 1024i64 }
--- compiled random input { [4194304]i32 2048i64 }
--- compiled random input { [4194304]i32 4096i64 }
-entry bench_bsz_fast [n] (A: [n]i32) (k: i64) : [n]i64 =
+-- compiled random input { [1048576]i64 256i64 }
+-- compiled random input { [1048576]i64 512i64 }
+-- compiled random input { [1048576]i64 1024i64 }
+-- compiled random input { [1048576]i64 2048i64 }
+-- compiled random input { [1048576]i64 4096i64 }
+-- compiled random input { [4194304]i64 256i64 }
+-- compiled random input { [4194304]i64 512i64 }
+-- compiled random input { [4194304]i64 1024i64 }
+-- compiled random input { [4194304]i64 2048i64 }
+-- compiled random input { [4194304]i64 4096i64 }
+entry bench_bsz_fast [n] (A: [n]i64) (k: i64) : [n]i64 =
   bsz_fast.BSZ A k
 
 -- BSV implementation
