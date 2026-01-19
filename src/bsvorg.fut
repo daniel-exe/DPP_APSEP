@@ -110,7 +110,8 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
   let I2 = (flatten I2)
   let L2 = scatter (copy L1) I2 (flatten L2)
   let R2 = scatter (copy R1) I2 (flatten R2)
-
+  
+  let In = replicate n (-1)
   -- L3: far away
   let (I3L, V3L, I3R, V3R) =
     map3 (\ri (b1,b2) bl ->
@@ -131,14 +132,14 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
              let (l_upd, r_upd) =
                farAwayBlocks_ANSV_linear A bBR b1 b2 rBR Lseg Rseg
 
-             let IL = map (\x -> if x < lenL then b2 + x else -1i64) (iota bfsize)
-             let IR = map (\x -> if x < lenR then bBR + x else -1i64) (iota bfsize)
+             let IL = map (\x -> if x < lenL && x >= b2 then x else -1i64) (iota n)
+             let IR = map (\x -> if x < lenR && x >= bBR then x else -1i64) (iota n)
 
-             let VL = (replicate bfsize (-1i64)) with [0:lenL] = l_upd
-             let VR = (replicate bfsize (-1i64)) with [0:lenR] = r_upd
+             let VL = copy In with [b2 :b2 +lenL] = l_upd
+             let VR = copy In with [bBR:bBR+lenR] = r_upd
              in (IL, VL, IR, VR)
-           else (Ix,Ix,Ix,Ix)
-      else (Ix,Ix,Ix,Ix)
+           else (In,In,In,In)
+      else (In,In,In,In)
     ) REPs B_blocks blocks |> unzip4
 
   let I3L = flatten I3L
@@ -168,14 +169,14 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
              let (l_upd, r_upd) =
                farAwayBlocks_ANSV_linear A rBL b1 b2 bBL Lseg Rseg
 
-             let IL = map (\x -> if x < lenL then b2 + x else -1i64) (iota bfsize)
-             let IR = map (\x -> if x < lenR then rBL + x else -1i64) (iota bfsize)
+             let IL = map (\x -> if x < lenL && x >= b2 then x else -1i64) (iota n)
+             let IR = map (\x -> if x < lenR && x >= rBL then x else -1i64) (iota n)
 
-             let VL = (replicate bfsize (-1i64)) with [0:lenL] = l_upd
-             let VR = (replicate bfsize (-1i64)) with [0:lenR] = r_upd
+             let VL = copy In with [b2:b2+lenL] = l_upd
+             let VR = copy In with [rBL:rBL+lenR] = r_upd
              in (IL, VL, IR, VR)
-           else (Ix,Ix,Ix,Ix)
-      else (Ix,Ix,Ix,Ix)
+           else (In,In,In,In)
+      else (In,In,In,In)
     ) REPs B_blocks blocks |> unzip4
 
   let I4L = flatten I4L
