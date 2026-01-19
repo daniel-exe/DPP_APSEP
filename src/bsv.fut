@@ -111,7 +111,7 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
   let I2 = (flatten I2)
   let L2 = scatter (copy L1) I2 (flatten L2)
   let R2 = scatter (copy R1) I2 (flatten R2)
-
+  let Ix = replicate blockSize (-1)
   -- L3: far away
   let (I3L, V3L, I3R, V3R) =
     map3 (\ri (b1,b2) bl ->
@@ -119,7 +119,7 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
         let BLi = b1 / blockSize
         let BRi = b2 / blockSize
         let rBR = if BRi >= 0 then REPs[BRi] else -1
-        let ((_, bBL), (bBR, _)) = (B_blocks[BLi], B_blocks[BRi])
+        let (bBR, _) = B_blocks[BRi]
 
         in if BLi == bBR / blockSize then
         
@@ -132,11 +132,11 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
              let (l_upd, r_upd) =
                farAwayBlocks_ANSV_linear A bBR b1 b2 rBR Lseg Rseg
 
-             let IL = map (\x -> if x < lenL then b2 + x else -1i64) (iota bfsize)
-             let IR = map (\x -> if x < lenR then bBR + x else -1i64) (iota bfsize)
+             let IL = map (\x -> if x < lenL then b2 + x else -1i64) (iota blockSize)
+             let IR = map (\x -> if x < lenR then bBR + x else -1i64) (iota blockSize)
 
-             let VL = (replicate bfsize (-1i64)) with [0:lenL] = l_upd
-             let VR = (replicate bfsize (-1i64)) with [0:lenR] = r_upd
+             let VL = (replicate blockSize (-1i64)) with [0:lenL] = l_upd
+             let VR = (replicate blockSize (-1i64)) with [0:lenR] = r_upd
              in (IL, VL, IR, VR)
            else (Ix,Ix,Ix,Ix)
       else (Ix,Ix,Ix,Ix)
@@ -149,7 +149,6 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
 
   let L3 = scatter (copy L2) I3L V3L
   let R3 = scatter (copy R2) I3R V3R
-
   -- L4: far away
   let (I4L, V4L, I4R, V4R) =
     map3 (\ri (b1,b2) bl ->
@@ -157,7 +156,7 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
         let BLi = b1 / blockSize
         let BRi = b2 / blockSize
         let rBL = if BLi >= 0 then REPs[BLi] else -1
-        let ((_, bBL), (bBR, _)) = (B_blocks[BLi], B_blocks[BRi])
+        let (_, bBL) = B_blocks[BLi]
 
         in if BRi == bBL / blockSize then
 
@@ -169,11 +168,11 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
              let (l_upd, r_upd) =
                farAwayBlocks_ANSV_linear A rBL b1 b2 bBL Lseg Rseg
 
-             let IL = map (\x -> if x < lenL then b2 + x else -1i64) (iota bfsize)
-             let IR = map (\x -> if x < lenR then rBL + x else -1i64) (iota bfsize)
+             let IL = map (\x -> if x < lenL then b2 + x else -1i64) (iota blockSize)
+             let IR = map (\x -> if x < lenR then rBL + x else -1i64) (iota blockSize)
 
-             let VL = (replicate bfsize (-1i64)) with [0:lenL] = l_upd
-             let VR = (replicate bfsize (-1i64)) with [0:lenR] = r_upd
+             let VL = (replicate blockSize (-1i64)) with [0:lenL] = l_upd
+             let VR = (replicate blockSize (-1i64)) with [0:lenR] = r_upd
              in (IL, VL, IR, VR)
            else (Ix,Ix,Ix,Ix)
       else (Ix,Ix,Ix,Ix)
@@ -194,7 +193,7 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
   let R_final =
     map2 (\i x -> if x == -1i64 then mintree.strict_next tree i else x)
          (iota n) R4
-  in (L_final, R_final)
+  in (L4, R4)
 
 
 -- entries
@@ -312,3 +311,5 @@ entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : ([]i64, []i64) =
 -- output {[-1i64,-1i64,1i64,1i64,3i64,-1i64] [1i64,5i64,3i64,5i64,5i64,-1i64]}
 -- input {[6i64,5i64,7i64,4i64,9i64,2i64] 2i64}
 -- output {[-1i64,-1i64,1i64,-1i64,3i64,-1i64] [1i64,3i64,3i64,5i64,5i64,-1i64]}
+-- input {[0i64,5i64,7i64,4i64,9i64,1i64] 2i64}
+-- output {[-1i64,0i64,1i64,0i64,3i64,0i64] [-1i64,3i64,3i64,5i64,5i64,-1i64]}
