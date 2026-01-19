@@ -46,15 +46,16 @@ let findLeftRightMatch (tree: mintree.tree) (i: i64) : (i64, i64) =
 -- Adjacent merge for a block (stack-based nearest smaller scan)
 let adjacentMergeGeneric [n] (A: []i64) (X: [n]i64) (offset: i64) (forward: bool) : [n]i64 =
   let max = i64.min (offset + n - 1) (length A - 1)
-  let (start, step, end) = if forward then (offset, offset+1, max ) else (max , max-1, offset)
-    in
-    let (X,_,_) = loop (X_acc, top, stack) = (copy X, -1i64, replicate n 0i64) for i in start .. step ... end do
-      let rec_top = loop t = top while t >= 0 && A[stack[t]] > A[i] do t - 1
-      let X_acc2 = if rec_top >= 0 && A[stack[rec_top]] < A[i] then X_acc with [i - offset] = stack[rec_top] else X_acc
-      let top2 = rec_top + 1
-      let stack2 = stack with [top2] = i
-      in (X_acc2, top2, stack2)
-  in X
+  let (start, step, end) = if forward then (offset, offset+1, max ) else (max , max-1, offset) in
+    if offset < max then 
+      let (X,_,_) = loop (X_acc, top, stack) = (copy X, -1i64, replicate n 0i64) for i in start .. step ... end do
+        let rec_top = loop t = top while t >= 0 && A[stack[t]] > A[i] do t - 1
+        let X_acc2 = if rec_top >= 0 && A[stack[rec_top]] < A[i] then X_acc with [i - offset] = stack[rec_top] else X_acc
+        let top2 = rec_top + 1
+        let stack2 = stack with [top2] = i
+        in (X_acc2, top2, stack2)
+      in X
+    else X
 let adjacentMergeBOTH [n] (A: []i64) (L:[n]i64) (R:[n]i64) (offset: i64) : ([n]i64, [n]i64) =
   (adjacentMergeGeneric A L offset true,  adjacentMergeGeneric A R offset false)
 
