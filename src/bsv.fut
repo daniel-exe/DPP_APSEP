@@ -1,6 +1,6 @@
 -- Berkman & Vishkin ANSV skeleton in Futhark
 
-import "lib/reduction_tree/reduction_tree_test"
+import "lib/reduction_tree/reduction_tree_test"  -- or wherever your binary reduction tree modules are
 
 -- For safe slicing
 let slice [m] (xs: [m]i64) (l: i64) (r: i64) : []i64 =
@@ -59,7 +59,7 @@ let adjacentMergeGeneric [n] (A: []i64) (X: [n]i64) (offset: i64) (forward: bool
 let adjacentMergeBOTH [n] (A: []i64) (L:[n]i64) (R:[n]i64) (offset: i64) : ([n]i64, [n]i64) =
   (adjacentMergeGeneric A L offset true,  adjacentMergeGeneric A R offset false)
 
-let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
+let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : [n]i64 =
   let tree = mintree.make A
   let blockCount = (n + blockSize - 1) / blockSize
   let blocks = iota blockCount
@@ -84,36 +84,35 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
   let bfsize = (2 * blockSize)
   let Ix = replicate bfsize (-1)
 
-  let (L1, R1, I1) = map3 (\ri (b1,b2) bl->
+  let (L1,I1) = map3 (\ri (b1,b2) bl->
     let BLi = if b1 == -1 then -1 else b1 / blockSize
     in if BLi >= 0 && BLi + 1 == bl && b1 != -1 then
         let len = i64.min (i64.max 0 (ri - b1 + 1)) (n - b1)
         let I = map (\x -> if x < len && x != 0 then x + b1 else -1) (iota bfsize)
-        let (l, r) = adjacentMergeBOTH A (copy L0[b1:b1+len]) (copy R0[b1:b1+len]) b1
-        in ((replicate bfsize (-1)) with [0:len] = l, (replicate bfsize (-1)) with [0:len] = r, I)
-    else (Ix,Ix,Ix)
-    ) REPs B_blocks blocks |> unzip3
+        let l = adjacentMergeGeneric A (copy L0[b1:b1+len]) b1 true
+        in ((replicate bfsize (-1)) with [0:len] = l, I)
+    else (Ix,Ix)
+    ) REPs B_blocks blocks |> unzip2
 
   let I1 = (flatten I1)
   let L1 = scatter (copy L0) I1 (flatten L1)
-  let R1 = scatter (copy R0) I1 (flatten R1)
 
-  let (L2, R2, I2) = map3 (\ri (b1,b2) bl->
+  let (L2, I2) = map3 (\ri (b1,b2) bl->
     let BRi = if b2 == -1 then -1 else b2 / blockSize
     in if BRi >= 0 && BRi - 1 == bl && b2 != -1 then
         let len = i64.min (i64.max 0 (b2-ri + 1)) (n - ri)
         let I = map (\x -> if x < (len-1) then x + ri else -1) (iota bfsize)
-        let (l, r) = adjacentMergeBOTH A (copy L1[ri:ri+len]) (copy R1[ri:ri+len]) ri
-        in ((replicate bfsize (-1)) with [0:len] = l, (replicate bfsize (-1)) with [0:len] = r, I)
-    else (Ix,Ix,Ix)
-    ) REPs B_blocks blocks |> unzip3
+        let l = adjacentMergeGeneric A(copy L1[ri:ri+len]) ri true
+        in ((replicate bfsize (-1)) with [0:len] = l,I)
+    else (Ix,Ix)
+    ) REPs B_blocks blocks |> unzip2
 
   let I2 = (flatten I2)
   let L2 = scatter (copy L1) I2 (flatten L2)
-  let R2 = scatter (copy R1) I2 (flatten R2)
+
   let Ix = replicate blockSize (-1)
   -- L3: far away
-  let (I3L, V3L, I3R, V3R) =
+  let (I3L, V3L) =
     map3 (\ri (b1,b2) bl ->
       if b1 != -1 && b2 != -1 then
         let BLi = b1 / blockSize
@@ -124,33 +123,26 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
         in if BLi == bBR / blockSize then
 
              let Lseg = slice L2 b2 rBR
-             let Rseg = slice R2 bBR b1
+             let Rseg = slice L2 bBR b1
 
              let lenL = length Lseg
-             let lenR = length Rseg
 
-             let (l_upd, r_upd) =
+             let (l_upd,_) =
                farAwayBlocks_ANSV_linear A bBR b1 b2 rBR Lseg Rseg
 
              let IL = map (\x -> if x < lenL then b2 + x else -1i64) (iota blockSize)
-             let IR = map (\x -> if x < lenR then bBR + x else -1i64) (iota blockSize)
-
              let VL = (replicate blockSize (-1i64)) with [0:lenL] = l_upd
-             let VR = (replicate blockSize (-1i64)) with [0:lenR] = r_upd
-             in (IL, VL, IR, VR)
-           else (Ix,Ix,Ix,Ix)
-      else (Ix,Ix,Ix,Ix)
-    ) REPs B_blocks blocks |> unzip4
+             in (IL, VL)
+           else (Ix,Ix)
+      else (Ix,Ix)
+    ) REPs B_blocks blocks |> unzip2
 
   let I3L = flatten I3L
   let V3L = flatten V3L
-  let I3R = flatten I3R
-  let V3R = flatten V3R
-
   let L3 = scatter (copy L2) I3L V3L
-  let R3 = scatter (copy R2) I3R V3R
+
   -- L4: far away
-  let (I4L, V4L, I4R, V4R) =
+  let (I4L, V4L) =
     map3 (\ri (b1,b2) bl ->
       if b1 != -1 && b2 != -1 then
         let BLi = b1 / blockSize
@@ -161,30 +153,23 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
         in if BRi == bBL / blockSize then
 
              let Lseg = slice L3 b2 bBL
-             let Rseg = slice R3 rBL b1
+             let Rseg = slice L3 rBL b1
              let lenL = length Lseg
-             let lenR = length Rseg
 
-             let (l_upd, r_upd) =
+             let (l_upd,_) =
                farAwayBlocks_ANSV_linear A rBL b1 b2 bBL Lseg Rseg
 
              let IL = map (\x -> if x < lenL then b2 + x else -1i64) (iota blockSize)
-             let IR = map (\x -> if x < lenR then rBL + x else -1i64) (iota blockSize)
 
              let VL = (replicate blockSize (-1i64)) with [0:lenL] = l_upd
-             let VR = (replicate blockSize (-1i64)) with [0:lenR] = r_upd
-             in (IL, VL, IR, VR)
-           else (Ix,Ix,Ix,Ix)
-      else (Ix,Ix,Ix,Ix)
-    ) REPs B_blocks blocks |> unzip4
+             in (IL, VL)
+           else (Ix,Ix)
+      else (Ix,Ix)
+    ) REPs B_blocks blocks |> unzip2
 
   let I4L = flatten I4L
   let V4L = flatten V4L
-  let I4R = flatten I4R
-  let V4R = flatten V4R
-
   let L4 = scatter (copy L3) I4L V4L
-  let R4 = scatter (copy R3) I4R V4R
 
   in (L4, R4)
 
@@ -207,7 +192,7 @@ entry findLeftRightMatch_entry (A: []i64) (i: i64) : []i64 =
 entry adjacentMerge_entry [n] (A: []i64) (L: [n]i64) (R: [n]i64) (offset: i64) : ([n]i64, [n]i64) =
   adjacentMergeBOTH A L R offset
 
-entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : ([]i64, []i64) =
+entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : []i64 =
   ANSV_Berkman A blockSize
 
 
@@ -265,44 +250,44 @@ entry ANSV_Berkman_entry (A: []i64) (blockSize: i64) : ([]i64, []i64) =
 -- ==
 -- entry: ANSV_Berkman_entry
 -- input {[5i64,1i64,9i64,10i64,4i64,6i64] 2i64}
--- output {[-1i64,-1i64,1i64,2i64,1i64,4i64] [1i64,-1i64,4i64,4i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,1i64,2i64,1i64,4i64]}
 -- input {[3i64,1i64,4i64,2i64,5i64] 1i64}
--- output {[-1i64,-1i64,1i64,1i64,3i64] [1i64,-1i64,3i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,1i64,1i64,3i64] }
 -- input {[3i64,1i64,2i64,-1i64,6i64] 2i64}
--- output {[-1i64,-1i64,1i64,-1i64,3i64] [1i64,3i64,3i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,1i64,-1i64,3i64] }
 -- input {[3i64,1i64,4i64,5i64] 2i64}
--- output {[-1i64,-1i64,1i64,2i64] [1i64,-1i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,1i64,2i64]}
 -- input {[2i64,1i64,3i64,4i64] 2i64}
--- output {[-1i64,-1i64,1i64,2i64] [1i64,-1i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,1i64,2i64] }
 -- input {[4i64,3i64,1i64,2i64] 2i64}
--- output {[-1i64,-1i64,-1i64,2i64] [1i64,2i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,-1i64,2i64] }
 -- input {[3i64,2i64,1i64,4i64] 2i64}
--- output {[-1i64,-1i64,-1i64,2i64] [1i64,2i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,-1i64,2i64] }
 -- input {[2i64,2i64,2i64,2i64] 2i64}
--- output {[-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,-1i64,-1i64] }
 -- input {[7i64,6i64,5i64,8i64,9i64] 3i64}
--- output {[-1i64,-1i64,-1i64,2i64,3i64] [1i64,2i64,-1i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,-1i64,2i64,3i64] }
 -- input {[1i64,2i64,3i64,4i64,5i64] 2i64}
--- output {[-1i64,0i64,1i64,2i64,3i64] [-1i64,-1i64,-1i64,-1i64,-1i64]}
+-- output {[-1i64,0i64,1i64,2i64,3i64] }
 -- input {[5i64,4i64,3i64,2i64,1i64] 2i64}
--- output {[-1i64,-1i64,-1i64,-1i64,-1i64] [1i64,2i64,3i64,4i64,-1i64]}
+-- output {[-1i64,-1i64,-1i64,-1i64,-1i64] }
 -- input {[4i64,1i64,3i64,2i64] 2i64}
--- output {[-1i64,-1i64,1i64,1i64] [1i64,-1i64,3i64,-1i64]}
+-- output {[-1i64,-1i64,1i64,1i64] }
 -- input {[1i64] 2i64}
--- output {[-1i64] [-1i64]}
+-- output {[-1i64]}
 -- input {[1i64,2i64,3i64,4i64,5i64] 2i64}
--- output {[-1i64,0i64,1i64,2i64,3i64] [-1i64,-1i64,-1i64,-1i64,-1i64]}
+-- output {[-1i64,0i64,1i64,2i64,3i64] }
 -- input {[5i64,4i64,3i64,2i64,1i64] 2i64}
--- output {[-1i64,-1i64,-1i64,-1i64,-1i64] [1i64,2i64,3i64,4i64,-1i64]}
+-- output {[-1i64,-1i64,-1i64,-1i64,-1i64] }
 -- input {[2i64,2i64,2i64,2i64] 2i64}
--- output {[-1i64,-1i64,-1i64,-1i64] [-1i64,-1i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,-1i64,-1i64] }
 -- input {[5i64,1i64,2i64,3i64] 2i64}
--- output {[-1i64,-1i64,1i64,2i64] [1i64,-1i64,-1i64,-1i64]}
+-- output {[-1i64,-1i64,1i64,2i64] }
 -- input {[2i64,3i64,1i64,4i64] 2i64}
--- output {[-1i64,0i64,-1i64,2i64] [2i64,2i64,-1i64,-1i64]}
+-- output {[-1i64,0i64,-1i64,2i64] }
 -- input {[3i64,1i64,4i64,2i64,5i64,0i64] 2i64}
--- output {[-1i64,-1i64,1i64,1i64,3i64,-1i64] [1i64,5i64,3i64,5i64,5i64,-1i64]}
+-- output {[-1i64,-1i64,1i64,1i64,3i64,-1i64] }
 -- input {[6i64,5i64,7i64,4i64,9i64,2i64] 2i64}
--- output {[-1i64,-1i64,1i64,-1i64,3i64,-1i64] [1i64,3i64,3i64,5i64,5i64,-1i64]}
+-- output {[-1i64,-1i64,1i64,-1i64,3i64,-1i64] }
 -- input {[0i64,5i64,7i64,4i64,9i64,1i64] 2i64}
--- output {[-1i64,0i64,1i64,0i64,3i64,0i64] [-1i64,3i64,3i64,5i64,5i64,-1i64]}
+-- output {[-1i64,0i64,1i64,0i64,3i64,0i64] }

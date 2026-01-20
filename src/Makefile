@@ -31,4 +31,4 @@ plot:
 			--logx
 
 clean:
-	rm -rf data plots bsz bsv bench *.c
+	rm -rf data plots bsz bsv bench *.c *.json

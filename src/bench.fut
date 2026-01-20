@@ -72,7 +72,6 @@ entry bench_bsz (n: i64) (k: i64) : [n]i64 =
 -- compiled input { 65536i64 128i64 }
 -- compiled input { 65536i64 256i64 }
 -- compiled input { 65536i64 512i64 }
--- compiled input { 65536i64 1024i64 }
-entry bench_bsv (n: i64) (k: i64) : ([n]i64, [n]i64) =
+entry bench_bsv (n: i64) (k: i64) : [n]i64 =
   let A = gen_shuffled_iota n 1
   in bsv.ANSV_Berkman A k
