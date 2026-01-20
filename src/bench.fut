@@ -6,7 +6,7 @@ module bsz = import "bsz"
 module bsv = import "bsv"
 
 module rt  = import "lib/reduction_tree/reduction_tree"
-module rtt = import "lib/reduction_tree/reduction_tree_test"
+-- module mintree = mk_mintree i64
 
 module shuffle = import "lib/cpprandom/shuffle"
 module shfl = shuffle.mk_shuffle u32 shuffle.pcg32
