@@ -11,28 +11,18 @@ bsz_cuda = [927, 3572, 58982]
 bsv_cuda = [1171, 4408, 76204]
 
 
-
 plt.figure()
-plt.plot(n, baseline_cuda, marker='o', label='baseline')
-plt.plot(n, bsz_cuda, marker='o', label='bsz')
-plt.plot(n, bsv_cuda, marker='o', label='bsv')
+plt.plot(n, baseline_cuda, marker='o', label='baseline (CUDA)')
+plt.plot(n, bsz_cuda, marker='o', label='bsz (CUDA)')
+plt.plot(n, bsv_cuda, marker='o', label='bsv (CUDA)')
+plt.plot(n, baseline_multicore, marker='o', label='baseline (multicore)')
+plt.plot(n, bsz_multicore, marker='o', label='bsz (multicore)')
+plt.plot(n, bsv_multicore, marker='o', label='bsv (multicore)')
+plt.xscale('log')
 plt.yscale('log')
 plt.xlabel('n')
 plt.ylabel('Time (μs)')
-plt.title('CUDA Performance')
-plt.grid(True, which="both")
+plt.title('Performance')
+plt.grid(True, which="both", alpha=0.5)
 plt.legend()
-plt.savefig("CUDA_performance.png")
-
-
-plt.figure()
-plt.plot(n, baseline_multicore, marker='o', label='baseline')
-plt.plot(n, bsz_multicore, marker='o', label='bsz')
-plt.plot(n, bsv_multicore, marker='o', label='bsv')
-plt.yscale('log')
-plt.xlabel('n')
-plt.ylabel('Time (μs)')
-plt.title('Multicore Performance')
-plt.grid(True, which="both")
-plt.legend()
-plt.savefig("multicore_performance.png")
+plt.savefig("performance.png")
