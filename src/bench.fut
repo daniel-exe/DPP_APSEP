@@ -5,8 +5,24 @@
 module bsz = import "bsz"
 module bsv = import "bsv"
 
-module rt  = import "reduction_tree/reduction_tree"
-module rtt = import "reduction_tree/reduction_tree_test"
+module rt  = import "lib/reduction_tree/reduction_tree"
+module rtt = import "lib/reduction_tree/reduction_tree_test"
+
+module shuffle = import "lib/cpprandom/shuffle"
+module shfl = shuffle.mk_shuffle u32 shuffle.pcg32
+
+let mk_rng (seed: i64) (n: i64) =
+  shuffle.pcg32.rng_from_seed
+    [ i32.u32 (u32.i64 seed)
+    , i32.u32 (u32.i64 n)
+    , 42i32
+    ]
+
+let gen_shuffled_iota (n: i64) (seed: i64) : [n]i64 =
+  let xs: [n]i64 = iota n
+  let rng = mk_rng seed n
+  let (_, ys) = shfl.shuffle rng xs
+  in ys
 
 module mintree = rt.mk_mintree {
   type t = i64
@@ -21,59 +37,40 @@ module mintree = rt.mk_mintree {
 -- O(n log n): build reduction tree once, query strict_previous for every i.
 -- ==
 -- entry: bench_mintree_strict_previous
--- compiled random input { [1048576]i64 }
--- compiled random input { [4194304]i64 }
-entry bench_mintree_strict_previous [n] (A: [n]i64) : [n]i64 =
+-- compiled input { 1048576i64 }
+entry bench_mintree_strict_previous (n: i64) : [n]i64 =
+  let A = gen_shuffled_iota n 1
   let t = mintree.make A
   in tabulate n (mintree.strict_previous t)
-
--- O(n^2): naive backwards linear search for every i.
--- ==
--- entry: bench_linear_strict_previous
-
--- compiled random input { [1048576]i64 }
--- compiled random input { [4194304]i64 }
-entry bench_linear_strict_previous [n] (A: [n]i64) : [n]i64 =
-  tabulate n (rtt.backwards_linear_search (<) A)
 
 -- bsz.fut: local matches via naive scan inside each block.
 -- ==
 -- entry: bench_bsz
--- compiled random input { [1048576]i64 16i64 }
--- compiled random input { [1048576]i64 32i64 }
--- compiled random input { [1048576]i64 256i64 }
--- compiled random input { [1048576]i64 512i64 }
-
--- old tests
--- compiled random input { [1048576]i64 1024i64 }
--- compiled random input { [1048576]i64 2048i64 }
--- compiled random input { [1048576]i64 4096i64 }
--- compiled random input { [4194304]i64 256i64 }
--- compiled random input { [4194304]i64 512i64 }
--- compiled random input { [4194304]i64 1024i64 }
--- compiled random input { [4194304]i64 2048i64 }
--- compiled random input { [4194304]i64 4096i64 }
-entry bench_bsz [n] (A: [n]i64) (k: i64) : [n]i64 =
-  bsz.BSZ A k
+-- compiled input { 1048576i64 64i64 }
+-- compiled input { 1048576i64 128i64 }
+-- compiled input { 1048576i64 256i64 }
+-- compiled input { 1048576i64 512i64 }
+-- compiled input { 1048576i64 1024i64 }
+-- compiled input { 1048576i64 2048i64 }
+-- compiled input { 1048576i64 4096i64 }
+-- compiled input { 1048576i64 8192i64 }
+-- compiled input { 1048576i64 16384i64 }
+entry bench_bsz (n: i64) (k: i64) : [n]i64 =
+  let A = gen_shuffled_iota n 1
+  in bsz.BSZ A k
 
 -- bsv.fut:
 -- ==
 -- entry: bench_bsv
--- compiled random input { [1048576]i64 16i64 }
--- compiled random input { [1048576]i64 32i64 }
--- compiled random input { [1048576]i64 256i64 }
--- compiled random input { [1048576]i64 512i64 }
-
--- old tests
--- compiled random input { [1048576]i64 256i64 }
--- compiled random input { [1048576]i64 512i64 }
--- compiled random input { [1048576]i64 1024i64 }
--- compiled random input { [1048576]i64 2048i64 }
--- compiled random input { [1048576]i64 4096i64 }
--- compiled random input { [4194304]i64 256i64 }
--- compiled random input { [4194304]i64 512i64 }
--- compiled random input { [4194304]i64 1024i64 }
--- compiled random input { [4194304]i64 2048i64 }
--- compiled random input { [4194304]i64 4096i64 }
-entry bench_bsv [n] (A: [n]i64) (k: i64) : ([n]i64, [n]i64) =
-  bsv.ANSV_Berkman A k
+-- compiled input { 1048576i64 1i64 }
+-- compiled input { 1048576i64 2i64 }
+-- compiled input { 1048576i64 4i64 }
+-- compiled input { 1048576i64 16i64 }
+-- compiled input { 1048576i64 64i64 }
+-- compiled input { 1048576i64 128i64 }
+-- compiled input { 1048576i64 256i64 }
+-- compiled input { 1048576i64 512i64 }
+-- compiled input { 1048576i64 1024i64 }
+entry bench_bsv (n: i64) (k: i64) : ([n]i64, [n]i64) =
+  let A = gen_shuffled_iota n 1
+  in bsv.ANSV_Berkman A k

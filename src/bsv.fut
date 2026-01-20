@@ -1,6 +1,6 @@
 -- Berkman & Vishkin ANSV skeleton in Futhark
 
-import "reduction_tree/reduction_tree_test"  -- or wherever your binary reduction tree modules are
+import "lib/reduction_tree/reduction_tree_test"
 
 -- For safe slicing
 let slice [m] (xs: [m]i64) (l: i64) (r: i64) : []i64 =
@@ -47,7 +47,7 @@ let findLeftRightMatch (tree: mintree.tree) (i: i64) : (i64, i64) =
 let adjacentMergeGeneric [n] (A: []i64) (X: [n]i64) (offset: i64) (forward: bool) : [n]i64 =
   let max = i64.min (offset + n - 1) (length A - 1)
   let (start, step, end) = if forward then (offset, offset+1, max ) else (max , max-1, offset) in
-    if offset < max then 
+    if offset < max then
       let (X,_,_) = loop (X_acc, top, stack) = (copy X, -1i64, replicate n 0i64) for i in start .. step ... end do
         let rec_top = loop t = top while t >= 0 && A[stack[t]] > A[i] do t - 1
         let X_acc2 = if rec_top >= 0 && A[stack[rec_top]] < A[i] then X_acc with [i - offset] = stack[rec_top] else X_acc
@@ -122,7 +122,7 @@ let ANSV_Berkman [n] (A: [n]i64) (blockSize: i64) : ([n]i64, [n]i64) =
         let (bBR, _) = B_blocks[BRi]
 
         in if BLi == bBR / blockSize then
-        
+
              let Lseg = slice L2 b2 rBR
              let Rseg = slice R2 bBR b1
 

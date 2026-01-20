@@ -1,4 +1,4 @@
-import "reduction_tree/transparent_reduction_tree"
+import "lib/reduction_tree/transparent_reduction_tree"
 
 
 let BSZ [n] (A: [n]i64) (k: i64) : [n]i64 =
