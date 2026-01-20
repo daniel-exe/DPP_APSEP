@@ -37,7 +37,7 @@ module mintree = rt.mk_mintree {
 -- O(n log n): build reduction tree once, query strict_previous for every i.
 -- ==
 -- entry: bench_mintree_strict_previous
--- compiled input { 1048576i64 }
+-- compiled input { 65536i64 }
 entry bench_mintree_strict_previous (n: i64) : [n]i64 =
   let A = gen_shuffled_iota n 1
   let t = mintree.make A
@@ -46,15 +46,17 @@ entry bench_mintree_strict_previous (n: i64) : [n]i64 =
 -- bsz.fut: local matches via naive scan inside each block.
 -- ==
 -- entry: bench_bsz
--- compiled input { 1048576i64 64i64 }
--- compiled input { 1048576i64 128i64 }
--- compiled input { 1048576i64 256i64 }
--- compiled input { 1048576i64 512i64 }
--- compiled input { 1048576i64 1024i64 }
--- compiled input { 1048576i64 2048i64 }
--- compiled input { 1048576i64 4096i64 }
--- compiled input { 1048576i64 8192i64 }
--- compiled input { 1048576i64 16384i64 }
+-- compiled input { 65536i64 64i64 }
+-- compiled input { 65536i64 128i64 }
+-- compiled input { 65536i64 256i64 }
+-- compiled input { 65536i64 512i64 }
+-- compiled input { 65536i64 1024i64 }
+-- compiled input { 65536i64 2048i64 }
+-- compiled input { 65536i64 4096i64 }
+-- compiled input { 65536i64 8192i64 }
+-- compiled input { 65536i64 16384i64 }
+-- compiled input { 65536i64 32768i64 }
+-- compiled input { 65536i64 65536i64 }
 entry bench_bsz (n: i64) (k: i64) : [n]i64 =
   let A = gen_shuffled_iota n 1
   in bsz.BSZ A k
@@ -62,15 +64,15 @@ entry bench_bsz (n: i64) (k: i64) : [n]i64 =
 -- bsv.fut:
 -- ==
 -- entry: bench_bsv
--- compiled input { 1048576i64 1i64 }
--- compiled input { 1048576i64 2i64 }
--- compiled input { 1048576i64 4i64 }
--- compiled input { 1048576i64 16i64 }
--- compiled input { 1048576i64 64i64 }
--- compiled input { 1048576i64 128i64 }
--- compiled input { 1048576i64 256i64 }
--- compiled input { 1048576i64 512i64 }
--- compiled input { 1048576i64 1024i64 }
+-- compiled input { 65536i64 1i64 }
+-- compiled input { 65536i64 2i64 }
+-- compiled input { 65536i64 4i64 }
+-- compiled input { 65536i64 16i64 }
+-- compiled input { 65536i64 64i64 }
+-- compiled input { 65536i64 128i64 }
+-- compiled input { 65536i64 256i64 }
+-- compiled input { 65536i64 512i64 }
+-- compiled input { 65536i64 1024i64 }
 entry bench_bsv (n: i64) (k: i64) : ([n]i64, [n]i64) =
   let A = gen_shuffled_iota n 1
   in bsv.ANSV_Berkman A k
